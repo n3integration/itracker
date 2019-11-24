@@ -1,0 +1,90 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '2'
+
+volumes:
+  orderer.widgets.com:
+  peer0.warehouse.widgets.com:
+  peer1.warehouse.widgets.com:
+  peer0.iad-factory.widgets.com:
+  peer1.iad-factory.widgets.com:
+
+networks:
+  byfn:
+services:
+  ca0:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-warehouse
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.warehouse.widgets.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/CA1_PRIVATE_KEY
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.warehouse.widgets.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/CA1_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/warehouse.widgets.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerWarehouse
+    networks:
+      - byfn
+
+  ca1:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-iad-factory
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.iad-factory.widgets.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/CA2_PRIVATE_KEY
+    ports:
+      - "8054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.iad-factory.widgets.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/CA2_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/iad-factory.widgets.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerIADFactory
+    networks:
+      - byfn
+
+  orderer.widgets.com:
+    extends:
+      file:   base/docker-compose-base.yaml
+      service: orderer.widgets.com
+    container_name: orderer.widgets.com
+    networks:
+      - byfn
+
+  peer0.warehouse.widgets.com:
+    container_name: peer0.warehouse.widgets.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.warehouse.widgets.com
+    networks:
+      - byfn
+
+  peer1.warehouse.widgets.com:
+    container_name: peer1.warehouse.widgets.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.warehouse.widgets.com
+    networks:
+      - byfn
+
+  peer0.iad-factory.widgets.com:
+    container_name: peer0.iad-factory.widgets.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.iad-factory.widgets.com
+    networks:
+      - byfn
+
+  peer1.iad-factory.widgets.com:
+    container_name: peer1.iad-factory.widgets.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.iad-factory.widgets.com
+    networks:
+      - byfn
