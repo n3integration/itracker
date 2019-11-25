@@ -1,0 +1,98 @@
+name: "network_byfn"
+description: "The network which will host the inventory blockchain"
+version: 1.0.0
+client:
+  organization: IADFactory
+  logging:
+    level: info
+
+  peer:
+    timeout:
+      connection: 3s
+      queryResponse: 45s
+      executeTxResponse: 30s
+
+  eventService:
+    timeout:
+      connection: 3s
+      registrationResponse: 3s
+
+  orderer:
+    timeout:
+      connection: 3s
+      response: 5s
+
+  cryptoconfig:
+    path: "${PWD}/../network/crypto-config"
+
+  credentialStore:
+    path: "${PWD}/.inventory-service-kvs"
+    cryptoStore:
+      path: "${PWD}/.inventory-service-msp"
+
+  # BCCSP config for the client. Used by GO SDK. It's the Blockchain Cryptographic Service Provider.
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: "SW"
+      hashAlgorithm: "SHA2"
+      softVerify: true
+      ephemeral: false
+      level: 256
+
+  tlsCerts:
+    systemCertPool: false
+
+channels:
+  inventory:
+    peers:
+      peer0.warehouse.widgets.com:
+      peer0.iad-factory.widgets.com:
+
+organizations:
+  Warehouse:
+    mspid: WarehouseMSP
+    cryptoPath: "peerOrganizations/warehouse.widgets.com/users/{userName}@warehouse.widgets.com/msp"
+    peers:
+      - peer0.iad-factory.widgets.com
+    certificateAuthorities:
+      - ca.warehouse.widgets.com
+  IADFactory:
+    mspid: IADFactoryMSP
+    cryptoPath: "peerOrganizations/iad-factory.widgets.com/users/{userName}@iad-factory.widgets.com/msp"
+    peers:
+      - peer0.warehouse.widgets.com
+    certificateAuthorities:
+      - ca.iad-factory.widgets.com
+
+peers:
+  peer0.warehouse.widgets.com:
+    url: grpcs://localhost:7051
+    eventUrl: grpcs://localhost:7053
+    grpcOptions:
+      ssl-target-name-override: peer0.warehouse.widgets.com
+      grpc.http2.keepalive_time: 15
+    tlsCACerts:
+      path: "${PWD}/../network/crypto-config/peerOrganizations/warehouse.widgets.com/tlsca/tlsca.warehouse.widgets.com-cert.pem"
+
+  peer0.iad-factory.widgets.com:
+    url: grpcs://localhost:9051
+    eventUrl: grpcs://localhost:9053
+    grpcOptions:
+      ssl-target-name-override: peer0.iad-factory.widgets.com
+      grpc.http2.keepalive_time: 15
+    tlsCACerts:
+      path: "${PWD}/../network/crypto-config/peerOrganizations/iad-factory.widgets.com/tlsca/tlsca.iad-factory.widgets.com-cert.pem"
+
+certificateAuthorities:
+  ca.iad-factory.com:
+    url: https://localhost:7054
+    httpOptions:
+      verify: false
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.iad-factory.widgets.com
+    tlsCACerts:
+      path: "${PWD}/../network/crypto-config/peerOrganizations/iad-factory.widgets.com/ca/ca.iad-factory.widgets.com-cert.pem"
