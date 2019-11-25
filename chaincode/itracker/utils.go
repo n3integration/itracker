@@ -33,6 +33,6 @@ func toValue(v *queryresult.KeyModification) string {
 func newError(code int32, format string, args ...interface{}) pb.Response {
 	return pb.Response{
 		Status:  code,
-		Message: fmt.Sprintf(format, args...),
+		Payload: []byte(fmt.Sprintf(format, args...)),
 	}
 }

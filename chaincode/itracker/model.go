@@ -34,11 +34,12 @@ func (s Status) String() string {
 
 type Item struct {
 	Serial       string `json:"serial"`
-	Code         string `json:"code"`
 	Manufacturer string `json:"manufacturer"`
+	Code         string `json:"code"`
 	Category     string `json:"category"`
 	Facility     string `json:"facility"`
 	Status       Status `json:"status"`
+	SubmittedBy  string `json:"submittedBy,omitempty"`
 }
 
 func (i Item) Validate() error {

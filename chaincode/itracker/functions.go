@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
@@ -50,13 +51,17 @@ func add(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
 		return newError(http.StatusConflict, "item with serial number %q already exists", item.Serial)
 	}
 
+	if cert, err := cid.GetX509Certificate(stub); err == nil {
+		item.SubmittedBy = cert.Subject.CommonName
+	}
+
 	item.Status = Available
 	serializedItem, _ = json.Marshal(item)
 	if err := stub.PutState(item.Serial, serializedItem); err != nil {
 		return shim.Error(errors.Wrap(err, "failed to save item").Error())
 	}
 
-	return shim.Success(nil)
+	return shim.Success(serializedItem)
 }
 
 func updateStatus(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
@@ -64,55 +69,61 @@ func updateStatus(stub shim.ChaincodeStubInterface, args ...string) peer.Respons
 		return newError(http.StatusBadRequest, "item serial number is required")
 	}
 
-	serializedItem, err := stub.GetState(args[0])
-	if err != nil {
-		return shim.Error(errors.Wrap(err, "failed to get item").Error())
-	} else if serializedItem == nil {
-		return newError(http.StatusNotFound, "failed to find %s", args[0])
+	item, err := getState(stub, args[0])
+	if item == nil {
+		return err
 	}
 
-	var item Item
-	if err := json.NewDecoder(bytes.NewReader(serializedItem)).Decode(&item); err != nil {
-		return newError(http.StatusBadRequest, errors.Wrap(err, "malformed input").Error())
+	if cert, err := cid.GetX509Certificate(stub); err == nil {
+		item.SubmittedBy = cert.Subject.CommonName
 	}
 
 	item.Status = Unavailable
 	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(item)
+	_ = json.NewEncoder(buffer).Encode(item)
 	if err := stub.PutState(item.Serial, buffer.Bytes()); err != nil {
-		return shim.Error(errors.Wrap(err, "").Error())
+		return shim.Error(errors.Wrap(err, "failed to save item").Error())
 	}
 
-	return shim.Success(nil)
+	return shim.Success(buffer.Bytes())
 }
 
 func transfer(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
 	if len(args) != 2 {
 		return newError(http.StatusBadRequest, "item serial number and facility are required")
+	} else if args[1] == "" {
+		return newError(http.StatusBadRequest, "item facility is required")
 	}
 
-	serializedItem, err := stub.GetState(args[0])
-	if err != nil {
-		return shim.Error(errors.Wrap(err, "failed to get item").Error())
-	} else if serializedItem == nil {
-		return newError(http.StatusNotFound, "failed to find %s", args[0])
+	item, err := getState(stub, args[0])
+	if item == nil {
+		return err
 	}
-
-	var item Item
-	json.NewDecoder(bytes.NewReader(serializedItem)).Decode(&item)
 
 	if item.Status == Unavailable {
 		return newError(http.StatusBadRequest, "item is no longer available and cannot be transferred")
+	} else if item.Facility == args[1] {
+		return shim.Success(nil)
+	}
+
+	if msp, err := cid.GetMSPID(stub); err != nil {
+		return newError(http.StatusInternalServerError, "unable to validate request")
+	} else if !strings.HasPrefix(msp, item.Facility) && !strings.HasPrefix(msp, args[1]) {
+		return newError(http.StatusBadRequest, "item cannot be transferred to %q by %q", args[1], msp)
+	}
+
+	if cert, err := cid.GetX509Certificate(stub); err == nil {
+		item.SubmittedBy = cert.Subject.CommonName
 	}
 
 	item.Facility = args[1]
 	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(item)
+	_ = json.NewEncoder(buffer).Encode(item)
 	if err := stub.PutState(item.Serial, buffer.Bytes()); err != nil {
-		return shim.Error(errors.Wrap(err, "").Error())
+		return shim.Error(errors.Wrap(err, "failed to save item").Error())
 	}
 
-	return shim.Success(nil)
+	return shim.Success(buffer.Bytes())
 }
 
 func get(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
@@ -208,3 +219,20 @@ func query(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
 	fmt.Fprint(buffer, "]")
 	return shim.Success(buffer.Bytes())
 }
+
+func getState(stub shim.ChaincodeStubInterface, key string) (*Item, peer.Response) {
+	serializedItem, err := stub.GetState(key)
+	if err != nil {
+		return nil, shim.Error(errors.Wrap(err, "failed to get item").Error())
+	} else if serializedItem == nil {
+		return nil, newError(http.StatusNotFound, "failed to find %s", key)
+	}
+
+	var item Item
+	if err := json.NewDecoder(bytes.NewReader(serializedItem)).Decode(&item); err != nil {
+		return nil, newError(http.StatusBadRequest, errors.Wrap(err, "malformed item state").Error())
+	}
+	return &item, shim.Success(nil)
+}
+
+type ChaincodeFunc func(shim.ChaincodeStubInterface, ...string) peer.Response

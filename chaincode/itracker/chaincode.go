@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
 
@@ -40,6 +41,13 @@ type InventoryTrackingChaincode struct {
 
 func (t *InventoryTrackingChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("initializing...")
+	args := stub.GetStringArgs()
+	if len(args) == 1 &&  args[0] == "testdata" {
+		if err := loadTestData(stub); err != nil {
+			return shim.Error(errors.Wrap(err, "failed to load test data").Error())
+		}
+	}
+
 	return shim.Success(nil)
 }
 
@@ -61,7 +69,7 @@ func (t *InventoryTrackingChaincode) Invoke(stub shim.ChaincodeStubInterface) pb
 	case fnQuery:
 		return query(stub, args...)
 	default:
-		return newError(http.StatusBadRequest, "%s is not a supported function", fn)
+		return newError(http.StatusBadRequest, "%q is not a supported operation", fn)
 	}
 }
 
