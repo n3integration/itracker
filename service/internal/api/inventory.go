@@ -90,7 +90,7 @@ func (c InventoryController) Add(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var item Item
-	if err := decode(w, bytes.NewReader(raw), &item); err == nil {
+	if err := decode(w, bytes.NewReader(raw), &item); err != nil {
 		return
 	}
 

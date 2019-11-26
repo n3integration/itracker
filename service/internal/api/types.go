@@ -45,7 +45,7 @@ func (i Item) Validate() error {
 		validation.Field(&i.Code, validation.Required),
 		validation.Field(&i.Manufacturer, validation.Required),
 		validation.Field(&i.Facility, validation.Required),
-		validation.Field(&i.Category, validation.Required, is.Alphanumeric),
+		validation.Field(&i.Category, validation.Required, is.PrintableASCII),
 	)
 }
 
