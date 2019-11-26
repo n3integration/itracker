@@ -1,2 +1,16 @@
+.inventory-service-msp
+
+network/bin
+network/channel-artifacts
+network/config
+network/crypto-config
+network/connection-iad-factory.json
+network/connection-iad-factory.yaml
+network/connection-warehouse.json
+network/connection-warehouse.yaml
+network/docker-compose-e2e.yaml
+
+chaincode/itracker/vendor
+
 ui/dist
 ui/node_modules

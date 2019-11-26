@@ -1,9 +1,10 @@
-.PHONY: dependencies run service ui
+.PHONY: dependencies run service ui network go_dep ng_dep fabric_dep netup netdown run
 
-GO := $(shell which go)
-NG := $(shell which ng)
+BIN := $(shell test -f network/bin/cryptogen && echo "exists")
+GO  := $(shell which go)
+NG  := $(shell which ng)
 NPM := $(shell which npm)
-OS := $(shell uname -s)
+OS  := $(shell uname -s)
 
 run: dependencies
 	@cd service && go run ./cmd/itracker
@@ -28,6 +29,21 @@ else
 endif
 endif
 
+fabric_dep:
+ifeq ($(strip $(BIN)),)
+	@cd network && curl -sfL https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/bootstrap.sh | bash -s -- -s -d
+	@cd network && test -e bin/configtxlator || (echo "failed to download bootstrap.sh" && exit 1)
+endif
+
+vendor:
+	@cd chaincode/itracker && go mod vendor
+
+netup: fabric_dep vendor
+	@cd network && echo -- -y | xargs ./byfn.sh up -c inventory -s couchdb #-n
+
+netdown: fabric_dep
+	@cd network && echo -- -y | xargs ./byfn.sh down
+
 lint: dependencies
 	@cd service && go vet ./...
 	@cd ui && ng lint
@@ -37,3 +53,6 @@ service:
 
 ui:
 	@cd ui && ng build
+
+clean: netdown
+	@rm -rf network/{bin,config,crypto-config,connection-*} chaincode/itracker/vendor
