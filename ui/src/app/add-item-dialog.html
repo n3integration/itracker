@@ -1,0 +1,36 @@
+<form (ngSubmit)="submit(data)" #itemForm="ngForm">
+    <h1 mat-dialog-title>Add Item</h1>
+    <div mat-dialog-content>
+        <div>
+            <mat-form-field>
+                <mat-label>Serial#</mat-label>
+                <input matInput placeholder="W000000" [(ngModel)]="data.serial" name="serial" required>
+            </mat-form-field>
+        </div>
+        <mat-form-field>
+            <mat-label>Manufacturer</mat-label>
+            <mat-select (selectionChange)="updateCode(data)" [(ngModel)]="data.manufacturer" name="manufacturer" required>
+                <mat-option *ngFor="let manufacturer of manufacturers" [value]="manufacturer.name">
+                    {{manufacturer.name}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Code</mat-label>
+            <mat-select (selectionChange)="updateCategory(data)" [(ngModel)]="data.code" name="code"
+                        [disabled]="getCodes(data.manufacturer).length === 0" required>
+                <mat-option *ngFor="let code of getCodes(data.manufacturer)" [value]="code.name">
+                    {{code.name}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Category</mat-label>
+            <input matInput disabled [(ngModel)]="data.category" name="category">
+        </mat-form-field>
+    </div>
+    <div mat-dialog-actions class="pull-right">
+        <button mat-button (click)="onNoClick()">Cancel</button>
+        <button mat-button type="submit" [disabled]="!itemForm.form.valid">Ok</button>
+    </div>
+</form>
