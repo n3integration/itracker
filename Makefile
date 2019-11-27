@@ -5,8 +5,11 @@ GO  := $(shell which go)
 NG  := $(shell which ng)
 NPM := $(shell which npm)
 OS  := $(shell uname -s)
+URL := "http://localhost:8020"
 
-run: dependencies
+run: dependencies ui
+	@echo
+	@echo "Open a browser window to => $(URL)"
 	@cd service && go run ./cmd/itracker
 
 dependencies: go_dep ng_dep
