@@ -33,6 +33,7 @@ To build and deploy this project, you should be running on a *NIX-compatible mac
 
 * [Go v.1.12+](https://golang.org/doc/install)
 * [NodeJS v12+](https://nodejs.org/en/)
+* [Docker](https://docs.docker.com/install/)
 
 #### Network
 
