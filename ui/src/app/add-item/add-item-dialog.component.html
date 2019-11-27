@@ -30,7 +30,7 @@
         </mat-form-field>
     </div>
     <div mat-dialog-actions class="pull-right">
-        <button mat-button (click)="onNoClick()">Cancel</button>
+        <button mat-button type="button" (click)="onNoClick()">Cancel</button>
         <button mat-button type="submit" [disabled]="!itemForm.form.valid">Ok</button>
     </div>
 </form>

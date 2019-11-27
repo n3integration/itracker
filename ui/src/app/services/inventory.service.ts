@@ -1,14 +1,22 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Item, ItemCollection} from '../item.model';
+
+import {Observable, of} from 'rxjs';
+import {map} from 'rxjs/operators';
+
+import {Item, ItemCollection, ItemHistory} from '../inventory.model';
+
+interface UpdateRequest {
+    op: string;
+    value?: string | null;
+}
 
 @Injectable({
     providedIn: 'root'
 })
 export class InventoryService {
 
-    private base = 'http://localhost:8020';
-    private initialized = false;
+    private baseUrl = 'http://localhost:8020';
     private items: ItemCollection[] = [
         // tslint:disable:max-line-length
         new ItemCollection('POD300-ARB', 'Adapter Harness for ARB Compressor - 300-ARB', 'http://n3.datasn.io/data/api/v1/n3a2/auto_part_2/main/part_image//78/16/77/b7/781677b73eaffdc105e8a25f8722d0def3712177.jpg', ''),
@@ -36,25 +44,46 @@ export class InventoryService {
     constructor(private http: HttpClient) {
     }
 
-    getItems(): ItemCollection[] {
-        if (!this.initialized) {
-            this.initialized = true;
-            this.http.get<Item[]>(`${this.base}/api/v1/inventory`)
-                .toPromise()
-                .then((items) => {
-                    items.forEach(item => {
-                        const index = this.items.findIndex((i) => i.code === item.code);
-                        this.items[index].items.push(item);
-                        this.items[index].manufacturer = item.manufacturer;
-                        this.items[index].category = item.category;
-                    });
-                });
-        }
-        return this.items;
+    get(code: string): Observable<ItemCollection> {
+        return of(this.items.filter((col) => col.code === code)[0]);
     }
 
-    addItem(item: Item): void {
-        this.http.post(`${this.base}/api/v1/inventory`, JSON.stringify(item))
-            .subscribe((result) => console.log(result));
+    getAll(): Observable<ItemCollection[]> {
+        this.items.forEach(col => {
+            col.items.length = 0;
+        });
+        return this.http.get<Item[]>(`${this.baseUrl}/api/v1/inventory`)
+            .pipe(map((items) => {
+                items.forEach(item => {
+                    const index = this.items.findIndex((i) => i.code === item.code);
+                    this.items[index].items.push(item);
+                    this.items[index].manufacturer = item.manufacturer;
+                    this.items[index].category = item.category;
+                });
+                return this.items;
+            }));
+    }
+
+    add(item: Item): Observable<Item> {
+        return this.http.post<Item>(`${this.baseUrl}/api/v1/inventory`, JSON.stringify(item));
+    }
+
+    transfer(item: Item): Observable<Item> {
+        const req: UpdateRequest = {
+            op: 'transfer',
+            value: item.facility,
+        };
+        return this.http.put<Item>(`${this.baseUrl}/api/v1/inventory/${item.serial}`, JSON.stringify(req));
+    }
+
+    updateStatus(item: Item): Observable<Item> {
+        const req: UpdateRequest = {
+            op: 'status',
+        };
+        return this.http.put<Item>(`${this.baseUrl}/api/v1/inventory/${item.serial}`, JSON.stringify(req));
+    }
+
+    getHistory(item: Item): Observable<ItemHistory> {
+        return this.http.get<ItemHistory>(`${this.baseUrl}/api/v1/inventory/${item.serial}/history`);
     }
 }

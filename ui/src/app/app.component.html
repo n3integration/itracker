@@ -1,13 +1,9 @@
-<mat-toolbar color="primary">
+<mat-toolbar color="primary" matLine>
     <img src="assets/widget-factory-logo.png" width="35" class="logo"/>
 </mat-toolbar>
 
 <div class="content" role="main">
-    <div class="list-header">
-        <span>In Stock</span>
-        <button mat-raised-button color="primary" class="pull-right" (click)="openDialog()">Add Item +</button>
+    <div [@routeAnimations]="prepareRoute(o)">
+        <router-outlet #o="outlet"></router-outlet>
     </div>
-    <app-item-list></app-item-list>
 </div>
-
-<router-outlet></router-outlet>

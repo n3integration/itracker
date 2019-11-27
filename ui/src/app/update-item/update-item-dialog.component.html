@@ -1,0 +1,21 @@
+<form (ngSubmit)="submit(data)" #itemForm="ngForm">
+    <h1 mat-dialog-title>Update Item <span class="muted">{{ data.item.serial }}</span></h1>
+    <div mat-dialog-content>
+        <mat-radio-group name="op-group" [(ngModel)]="data.op">
+            <mat-radio-button name="update" value="update" [disabled]="data.disabled">
+                Mark the item as unavailable
+            </mat-radio-button>
+            <mat-radio-button name="transfer" value="transfer" [disabled]="data.disabled">
+                Transfer the item to another facility
+            </mat-radio-button>
+        </mat-radio-group>
+        <mat-form-field>
+            <mat-label>Facility</mat-label>
+            <input matInput [(ngModel)]="data.item.facility" name="facility" [disabled]="data.op==='update' || data.disabled"/>
+        </mat-form-field>
+    </div>
+    <div mat-dialog-actions class="pull-right">
+        <button mat-button type="button" (click)="onNoClick()">Cancel</button>
+        <button mat-button type="submit" [disabled]="!itemForm.form.valid || data.disabled">Ok</button>
+    </div>
+</form>

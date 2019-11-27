@@ -31,9 +31,18 @@ export class ItemCollection {
         this.items = [];
     }
 
+    addItem(item: Item) {
+        this.items.push(item);
+    }
+
     inStock(): number {
-        const reducer = (accum, i) => i.status === 1 ? 1 + accum : 0;
-        return this.items.reduce(reducer, 0);
+        let sum = 0;
+        this.items.forEach((i) => {
+            if (i.status === 1) {
+                sum += 1;
+            }
+        });
+        return sum;
     }
 
     total(): number {

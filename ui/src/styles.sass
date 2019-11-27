@@ -3,20 +3,38 @@ $color-dark-blue: rgb(31, 47, 87)
 $color-white: rgb(253, 250, 249)
 $color-light-gray: rgb(168, 168, 168)
 
+@import custom-theme
+
 table
   width: 100%
 
 th.mat-sort-header-sorted
   color: black
 
+tr.mat-row
+  cursor: pointer
+
 .mat-form-field
   width: 355px
+
+mat-nav-list.horizontal-list
+  padding: 0
+  .mat-list-item
+    display: inline-block
+    height: auto
+    width: auto
+
+.mat-list-base .mat-list-item
+  color: $color-white
+
+.mat-nav-list a.active
+  border-bottom: $color-white 2px solid
 
 .logo
   padding-right: 10px
 
 .list-header
-  padding: 12px 8px
+  padding: 12px 18px
 
 .list-header .pull-right
   float: right
@@ -24,6 +42,9 @@ th.mat-sort-header-sorted
 
 .muted
   color: $color-light-gray
+
+div.mat-dialog-content
+  padding: 10px 24px
 
 .badge
   color: $color-white
@@ -34,8 +55,14 @@ th.mat-sort-header-sorted
 span.item
   padding-left: 12px
 
+ul.product-meta
+  list-style-type: none
+
+img.part
+  float: left
+  vertical-align: middle
+  padding-right: 12px
+
 img.item
   clip-path: circle(25px at center)
   vertical-align: middle
-
-@import custom-theme
