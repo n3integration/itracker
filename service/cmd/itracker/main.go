@@ -25,6 +25,7 @@ import (
 	"github.com/n3integration/itracker/internal/api"
 	"github.com/n3integration/itracker/internal/app"
 	"github.com/n3integration/itracker/internal/logger"
+	"github.com/n3integration/itracker/internal/middleware"
 )
 
 const (
@@ -60,7 +61,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.Use(mux.CORSMethodMiddleware(r)) // TODO
+	r.Use(middleware.Logger)
 	apiRouter := r.PathPrefix("/api/v1").Subrouter()
 	apiRouter.HandleFunc("/health", api.GetHealth).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/inventory", inventoryController.Query).Methods(http.MethodGet)
