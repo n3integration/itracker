@@ -9,13 +9,14 @@ import {InventoryService} from '../services/inventory.service';
 import {Item, ItemCollection} from '../inventory.model';
 import {InventoryDataSource} from '../inventory.datasource';
 import {UpdateItemDialogComponent} from '../update-item/update-item-dialog.component';
+import {ItemHistoryDialogComponent} from '../item-history/item-history-dialog.component';
 
 @Component({
     selector: 'app-item-collection-list',
     templateUrl: './item-collection-list.component.html',
 })
 export class ItemCollectionListComponent implements OnInit {
-    private columns: string[] = ['serial', 'facility', 'status', 'submittedBy'];
+    private columns: string[] = ['serial', 'facility', 'status', 'submittedBy', 'actions'];
 
     private collection$: ItemCollection;
     private dataSource: MatTableDataSource<Item>;
@@ -44,10 +45,17 @@ export class ItemCollectionListComponent implements OnInit {
         history.back();
     }
 
-    openDialog(item: Item) {
+    edit(item: Item) {
         const dialogRef = this.dialog.open(UpdateItemDialogComponent, {
             width: '420px',
             data: {item: Object.assign({}, item), op: 'update', disabled: item.status === 0},
+        });
+    }
+
+    viewHistory(item: Item) {
+        const dialogRef = this.dialog.open(ItemHistoryDialogComponent, {
+            width: '420px',
+            data: {item: Object.assign({}, item)},
         });
     }
 }

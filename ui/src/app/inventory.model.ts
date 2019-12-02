@@ -10,7 +10,7 @@ export class Item {
 
 export class ItemHistory {
     txId: string;
-    value: JSON;
+    value: string;
     timestamp: string;
 }
 

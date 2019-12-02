@@ -25,12 +25,14 @@ import {InventoryService} from './services/inventory.service';
 import {InventoryDataSource} from './inventory.datasource';
 import {ItemCollectionListComponent} from './item-collection/item-collection-list.component';
 import {UpdateItemDialogComponent} from './update-item/update-item-dialog.component';
+import {ItemHistoryDialogComponent} from './item-history/item-history-dialog.component';
 
 @NgModule({
     declarations: [
         AppComponent,
         AddItemDialogComponent,
         UpdateItemDialogComponent,
+        ItemHistoryDialogComponent,
         InStockItemsListComponent,
         ItemCollectionListComponent,
     ],
@@ -57,6 +59,7 @@ import {UpdateItemDialogComponent} from './update-item/update-item-dialog.compon
     entryComponents: [
         AddItemDialogComponent,
         UpdateItemDialogComponent,
+        ItemHistoryDialogComponent,
     ],
     providers: [
         InventoryService,

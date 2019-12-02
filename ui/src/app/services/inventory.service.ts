@@ -16,7 +16,7 @@ interface UpdateRequest {
 })
 export class InventoryService {
 
-    private baseUrl = 'http://localhost:8020';
+    private baseUrl = '';
     private items: ItemCollection[] = [
         // tslint:disable:max-line-length
         new ItemCollection('POD300-ARB', 'Adapter Harness for ARB Compressor - 300-ARB', 'http://n3.datasn.io/data/api/v1/n3a2/auto_part_2/main/part_image//78/16/77/b7/781677b73eaffdc105e8a25f8722d0def3712177.jpg', ''),
@@ -83,7 +83,7 @@ export class InventoryService {
         return this.http.put<Item>(`${this.baseUrl}/api/v1/inventory/${item.serial}`, JSON.stringify(req));
     }
 
-    getHistory(item: Item): Observable<ItemHistory> {
-        return this.http.get<ItemHistory>(`${this.baseUrl}/api/v1/inventory/${item.serial}/history`);
+    getHistory(item: Item): Observable<ItemHistory[]> {
+        return this.http.get<ItemHistory[]>(`${this.baseUrl}/api/v1/inventory/${item.serial}/history`);
     }
 }
