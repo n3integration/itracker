@@ -40,6 +40,8 @@ const (
 
 var empty Args
 
+type channelFunc func(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
+
 type InventoryController struct {
 	cfg    *app.Config
 	client *channel.Client
@@ -68,16 +70,16 @@ func NewInventoryController(cfg *app.Config) (*InventoryController, error) {
 	}, nil
 }
 
-func (c InventoryController) Query(w http.ResponseWriter, req *http.Request) {
-	c.query(w, c.newRequest(fnQuery, empty))
+func (c InventoryController) Query(w http.ResponseWriter, _ *http.Request) {
+	handle(w, c.newRequest(fnQuery, empty), c.client.Query)
 }
 
 func (c InventoryController) Get(w http.ResponseWriter, req *http.Request) {
-	c.query(w, c.newRequest(fnGet, Args{c.getSerialNumber(req)}))
+	handle(w, c.newRequest(fnGet, Args{c.getSerialNumber(req)}), c.client.Query)
 }
 
 func (c InventoryController) History(w http.ResponseWriter, req *http.Request) {
-	c.query(w, c.newRequest(fnGetHistory, Args{c.getSerialNumber(req)}))
+	handle(w, c.newRequest(fnGetHistory, Args{c.getSerialNumber(req)}), c.client.Query)
 }
 
 func (c InventoryController) Add(w http.ResponseWriter, req *http.Request) {
@@ -94,7 +96,7 @@ func (c InventoryController) Add(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	c.invoke(w, c.newRequest(fnAdd, Args{raw}))
+	handle(w, c.newRequest(fnAdd, Args{raw}), c.client.Execute)
 }
 
 func (c InventoryController) Update(w http.ResponseWriter, req *http.Request) {
@@ -107,25 +109,15 @@ func (c InventoryController) Update(w http.ResponseWriter, req *http.Request) {
 
 	switch updateReq.Operation {
 	case fnTransfer:
-		c.invoke(w, c.newRequest(fnTransfer, Args{c.getSerialNumber(req), Arg(updateReq.Value)}))
+		handle(w, c.newRequest(fnTransfer, Args{c.getSerialNumber(req), Arg(updateReq.Value)}), c.client.Execute)
 	default:
-		c.invoke(w, c.newRequest(fnUpdateStatus, Args{c.getSerialNumber(req)}))
+		handle(w, c.newRequest(fnUpdateStatus, Args{c.getSerialNumber(req)}), c.client.Execute)
 	}
 }
 
 func (c InventoryController) Close() error {
 	c.sdk.Close()
 	return nil
-}
-
-func (c InventoryController) query(w http.ResponseWriter, req *channel.Request) {
-	response, err := c.client.Query(*req)
-	handle(w, response, err)
-}
-
-func (c InventoryController) invoke(w http.ResponseWriter, req *channel.Request) {
-	response, err := c.client.Execute(*req)
-	handle(w, response, err)
 }
 
 func (c InventoryController) getSerialNumber(req *http.Request) Arg {
@@ -140,7 +132,8 @@ func (c InventoryController) newRequest(fn string, args Args) *channel.Request {
 	}
 }
 
-func handle(w http.ResponseWriter, response channel.Response, err error) {
+func handle(w http.ResponseWriter, req *channel.Request, fn channelFunc) {
+	response, err := fn(*req)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		replyWithError(w, err)

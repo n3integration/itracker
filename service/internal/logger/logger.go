@@ -80,7 +80,7 @@ func Error(message string, err error) {
 }
 
 func Fatal(message string, err error) {
-	errLogger.Println(message, err)
+	errLogger.Printf(message, err)
 	os.Exit(1)
 }
 
