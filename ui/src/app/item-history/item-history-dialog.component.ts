@@ -11,13 +11,13 @@ import {Item, ItemHistory} from '../inventory.model';
 })
 export class ItemHistoryDialogComponent implements OnInit {
 
-    private history: ItemHistory[];
+    history: ItemHistory[];
 
     constructor(
         private snackBar: MatSnackBar,
         private dialogRef: MatDialogRef<ItemHistoryDialogComponent>,
         @Inject(InventoryService) private service: InventoryService,
-        @Inject(MAT_DIALOG_DATA) private data) {
+        @Inject(MAT_DIALOG_DATA) public data) {
     }
 
     ngOnInit(): void {

@@ -27,7 +27,7 @@ export class InventoryDataSource implements DataSource<ItemCollection> {
 
     loadInventory() {
         this.inventoryService.getAll().pipe(
-            catchError(() => of([]))
+            catchError((err) => of([]))
         ).subscribe(items => this.itemsSubject.next(items));
     }
 

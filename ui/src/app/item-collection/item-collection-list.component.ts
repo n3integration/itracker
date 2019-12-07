@@ -16,10 +16,10 @@ import {ItemHistoryDialogComponent} from '../item-history/item-history-dialog.co
     templateUrl: './item-collection-list.component.html',
 })
 export class ItemCollectionListComponent implements OnInit {
-    private columns: string[] = ['serial', 'facility', 'status', 'submittedBy', 'actions'];
+    columns: string[] = ['serial', 'facility', 'status', 'submittedBy', 'actions'];
 
-    private collection$: ItemCollection;
-    private dataSource: MatTableDataSource<Item>;
+    collection$: ItemCollection;
+    dataSource: MatTableDataSource<Item>;
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
 

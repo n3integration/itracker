@@ -23,7 +23,7 @@ export class UpdateItemDialogComponent {
         private dialogRef: MatDialogRef<UpdateItemDialogComponent>,
         @Inject(InventoryService) private service: InventoryService,
         @Inject(InventoryDataSource) private datasource: InventoryDataSource,
-        @Inject(MAT_DIALOG_DATA) private data: Item) {
+        @Inject(MAT_DIALOG_DATA) public data: UpdateTO) {
     }
 
     submit(data: UpdateTO): void {

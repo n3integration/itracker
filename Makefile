@@ -10,6 +10,7 @@ URL := "http://localhost:8020"
 run: dependencies ui
 	@echo
 	@echo "Open a browser window to => $(URL)"
+	@echo
 	@cd service && go run ./cmd/itracker
 
 dependencies: go_dep ng_dep
@@ -55,7 +56,7 @@ service:
 	@cd service && go build ./cmd/itracker
 
 ui:
-	@cd ui && ng build
+	@cd ui && ng build --prod
 
 clean: netdown
 	@rm -rf network/{bin,config,crypto-config,connection-*} chaincode/itracker/vendor

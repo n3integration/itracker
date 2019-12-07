@@ -52,7 +52,7 @@ export class AddItemDialogComponent {
         private dialogRef: MatDialogRef<AddItemDialogComponent>,
         @Inject(InventoryService) private service: InventoryService,
         @Inject(InventoryDataSource) private datasource: InventoryDataSource,
-        @Inject(MAT_DIALOG_DATA) private data: Item) {
+        @Inject(MAT_DIALOG_DATA) public data: Item) {
     }
 
     getCodes(name): Code[] {

@@ -15,8 +15,8 @@ import {ItemCollection} from '../inventory.model';
     templateUrl: './in-stock-items-list.component.html',
 })
 export class InStockItemsListComponent implements OnInit {
-    private columns: string[] = ['code', 'item', 'category', 'manufacturer', 'quantity'];
-    private dataSource = new MatTableDataSource<ItemCollection>([]);
+    columns: string[] = ['code', 'item', 'category', 'manufacturer', 'quantity'];
+    dataSource = new MatTableDataSource<ItemCollection>([]);
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
 
@@ -27,9 +27,9 @@ export class InStockItemsListComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.dataSource.sort = this.sort;
         this.ds.loadInventory();
         this.ds.connect().subscribe((data) => this.dataSource.data = data);
+        this.dataSource.sort = this.sort;
     }
 
     goto(code: string): void {
