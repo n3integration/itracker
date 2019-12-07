@@ -18,42 +18,44 @@ package api
 
 import (
 	"encoding/json"
-	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
+
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	apiErrors "github.com/n3integration/itracker/internal/errors"
+	"github.com/pkg/errors"
 )
 
-var unknownError = &Error{Status: "error", Message: "an unknown error occurred"}
+type RequestHandler func(req *http.Request) (channel.Response, error)
 
-type Error struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+func Handler(fn RequestHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		v, err := fn(req)
+		if err == nil {
+			replyWithJson(w, v.Payload)
+			return
+		}
+
+		switch t := err.(type) {
+		case apiErrors.Error:
+			w.WriteHeader(t.Code)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		replyWithJson(w, err)
+	}
 }
 
-func decode(w http.ResponseWriter, r io.Reader, v validation.Validatable) (err error) {
-	if err = json.NewDecoder(r).Decode(v); err != nil {
-		handleBadRequest(w, errors.WithMessage(err, "invalid json request"))
-		return
+func decode(r io.Reader, v validation.Validatable) error {
+	if err := json.NewDecoder(r).Decode(v); err != nil {
+		return apiErrors.New(http.StatusBadRequest, errors.WithMessage(err, "invalid json request"))
 	}
 
-	if err = v.Validate(); err != nil {
-		handleBadRequest(w, err)
-		return
+	if err := v.Validate(); err != nil {
+		return apiErrors.New(http.StatusBadRequest, err)
 	}
-
 	return nil
-}
-
-func handleBadRequest(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusBadRequest)
-	replyWithError(w, err)
-}
-
-func replyWithError(w http.ResponseWriter, err error) error{
-	apiErr := &Error{Status: "error", Message: err.Error()}
-	replyWithJson(w, apiErr)
-	return err
 }
 
 func replyWithJson(w http.ResponseWriter, value interface{}) {
@@ -65,8 +67,8 @@ func replyWithJson(w http.ResponseWriter, value interface{}) {
 		w.Write(v)
 	default:
 		if content, err := json.Marshal(value); err != nil {
-			errContent, _ := json.Marshal(unknownError)
-			w.WriteHeader(http.StatusInternalServerError)
+			errContent, _ := json.Marshal(apiErrors.UnknownError)
+			w.WriteHeader(apiErrors.UnknownError.Code)
 			w.Write(errContent)
 		} else {
 			w.Write(content)

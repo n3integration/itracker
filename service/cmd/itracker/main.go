@@ -64,11 +64,11 @@ func main() {
 	r.Use(middleware.Logger)
 	apiRouter := r.PathPrefix("/api/v1").Subrouter()
 	apiRouter.HandleFunc("/health", api.GetHealth).Methods(http.MethodGet)
-	apiRouter.HandleFunc("/inventory", inventoryController.Query).Methods(http.MethodGet)
-	apiRouter.HandleFunc("/inventory", inventoryController.Add).Methods(http.MethodPost)
-	apiRouter.HandleFunc("/inventory/{serial}", inventoryController.Get).Methods(http.MethodGet)
-	apiRouter.HandleFunc("/inventory/{serial}", inventoryController.Update).Methods(http.MethodPut)
-	apiRouter.HandleFunc("/inventory/{serial}/history", inventoryController.History).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/inventory", api.Handler(inventoryController.Query)).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/inventory", api.Handler(inventoryController.Add)).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/inventory/{serial}", api.Handler(inventoryController.Get)).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/inventory/{serial}", api.Handler(inventoryController.Update)).Methods(http.MethodPut)
+	apiRouter.HandleFunc("/inventory/{serial}/history", api.Handler(inventoryController.History)).Methods(http.MethodGet)
 	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir(dir))))
 
 	server := &http.Server{

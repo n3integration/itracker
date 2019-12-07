@@ -18,15 +18,17 @@ package api
 
 import (
 	"bytes"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/n3integration/itracker/internal/app"
+	apiErrors "github.com/n3integration/itracker/internal/errors"
 	"github.com/n3integration/itracker/internal/logger"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"net/http"
 )
 
 const (
@@ -39,8 +41,6 @@ const (
 )
 
 var empty Args
-
-type channelFunc func(request channel.Request, options ...channel.RequestOption) (channel.Response, error)
 
 type InventoryController struct {
 	cfg    *app.Config
@@ -70,48 +70,47 @@ func NewInventoryController(cfg *app.Config) (*InventoryController, error) {
 	}, nil
 }
 
-func (c InventoryController) Query(w http.ResponseWriter, _ *http.Request) {
-	handle(w, c.newRequest(fnQuery, empty), c.client.Query)
+func (c InventoryController) Query(_ *http.Request) (channel.Response, error) {
+	return c.client.Query(c.newRequest(fnQuery, empty))
 }
 
-func (c InventoryController) Get(w http.ResponseWriter, req *http.Request) {
-	handle(w, c.newRequest(fnGet, Args{c.getSerialNumber(req)}), c.client.Query)
+func (c InventoryController) Get(req *http.Request) (channel.Response, error) {
+	return c.client.Query(c.newRequest(fnGet, Args{c.getSerialNumber(req)}))
 }
 
-func (c InventoryController) History(w http.ResponseWriter, req *http.Request) {
-	handle(w, c.newRequest(fnGetHistory, Args{c.getSerialNumber(req)}), c.client.Query)
+func (c InventoryController) History(req *http.Request) (channel.Response, error) {
+	return c.client.Query(c.newRequest(fnGetHistory, Args{c.getSerialNumber(req)}))
 }
 
-func (c InventoryController) Add(w http.ResponseWriter, req *http.Request) {
+func (c InventoryController) Add(req *http.Request) (channel.Response, error) {
 	defer req.Body.Close()
 
 	raw, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		handleBadRequest(w, errors.WithMessage(err, "bad request"))
-		return
+		return channel.Response{}, apiErrors.New(http.StatusBadRequest, errors.WithMessage(err, "bad request"))
 	}
 
 	var item Item
-	if err := decode(w, bytes.NewReader(raw), &item); err != nil {
-		return
+	if err := decode(bytes.NewReader(raw), &item); err != nil {
+		return channel.Response{}, err
 	}
 
-	handle(w, c.newRequest(fnAdd, Args{raw}), c.client.Execute)
+	return c.client.Execute(c.newRequest(fnAdd, Args{raw}))
 }
 
-func (c InventoryController) Update(w http.ResponseWriter, req *http.Request) {
+func (c InventoryController) Update(req *http.Request) (channel.Response, error) {
 	defer req.Body.Close()
 
 	var updateReq UpdateReq
-	if err := decode(w, req.Body, &updateReq); err != nil {
-		return
+	if err := decode(req.Body, &updateReq); err != nil {
+		return channel.Response{}, err
 	}
 
 	switch updateReq.Operation {
 	case fnTransfer:
-		handle(w, c.newRequest(fnTransfer, Args{c.getSerialNumber(req), Arg(updateReq.Value)}), c.client.Execute)
+		return c.client.Execute(c.newRequest(fnTransfer, Args{c.getSerialNumber(req), Arg(updateReq.Value)}))
 	default:
-		handle(w, c.newRequest(fnUpdateStatus, Args{c.getSerialNumber(req)}), c.client.Execute)
+		return c.client.Execute(c.newRequest(fnUpdateStatus, Args{c.getSerialNumber(req)}))
 	}
 }
 
@@ -124,31 +123,10 @@ func (c InventoryController) getSerialNumber(req *http.Request) Arg {
 	return Arg(mux.Vars(req)["serial"])
 }
 
-func (c InventoryController) newRequest(fn string, args Args) *channel.Request {
-	return &channel.Request{
+func (c InventoryController) newRequest(fn string, args Args) channel.Request {
+	return channel.Request{
 		ChaincodeID: c.cfg.ChainCodeID,
 		Fcn:         fn,
 		Args:        args,
-	}
-}
-
-func handle(w http.ResponseWriter, req *channel.Request, fn channelFunc) {
-	response, err := fn(*req)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		replyWithError(w, err)
-		return
-	}
-
-	switch response.ChaincodeStatus {
-	case http.StatusOK:
-		replyWithJson(w, response.Payload)
-	default:
-		if response.ChaincodeStatus > 0 {
-			w.WriteHeader(int(response.ChaincodeStatus))
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		replyWithJson(w, response.Payload)
 	}
 }
