@@ -151,32 +151,18 @@ func getHistory(stub shim.ChaincodeStubInterface, args ...string) peer.Response 
 		return shim.Error(errors.Wrap(err, "failed to get item history").Error())
 	}
 
-	defer iterator.Close()
-
-	first := true
-	buffer := new(bytes.Buffer)
-	fmt.Fprint(buffer, "[")
-	for iterator.HasNext() {
+	results, err := join(iterator, func() (string, error) {
 		history, err := iterator.Next()
 		if err != nil {
-			return shim.Error(errors.Wrap(err, "failed to iterate over item history").Error())
+			return "", err
 		}
-
-		if first {
-			first = false
-		} else {
-			fmt.Fprint(buffer, ",")
-		}
-
-		fmt.Fprintf(buffer, `{"txId":%q,"value":%s,"timestamp":%q}`,
+		return fmt.Sprintf(`{"txId":%q,"value":%s,"timestamp":%q}`,
 			history.TxId,
 			toValue(history),
 			time.Unix(history.Timestamp.Seconds, int64(history.Timestamp.Nanos)),
-		)
-	}
-
-	fmt.Fprint(buffer, "]")
-	return shim.Success(buffer.Bytes())
+		), nil
+	})
+	return shim.Success(results)
 }
 
 // by_category
@@ -196,28 +182,18 @@ func query(stub shim.ChaincodeStubInterface, args ...string) peer.Response {
 		return shim.Error(errors.Wrap(err, "failed to get item history").Error())
 	}
 
-	defer iterator.Close()
-
-	first := true
-	buffer := new(bytes.Buffer)
-	fmt.Fprint(buffer, "[")
-	for iterator.HasNext() {
-		history, err := iterator.Next()
+	results, err := join(iterator, func() (string, error) {
+		kv, err := iterator.Next()
 		if err != nil {
-			return shim.Error(errors.Wrap(err, "failed to iterate over item history").Error())
+			return "", err
 		}
+		return string(kv.Value), err
+	})
 
-		if first {
-			first = false
-		} else {
-			fmt.Fprint(buffer, ",")
-		}
-
-		fmt.Fprint(buffer, string(history.Value))
+	if err != nil {
+		shim.Error(err.Error())
 	}
-
-	fmt.Fprint(buffer, "]")
-	return shim.Success(buffer.Bytes())
+	return shim.Success(results)
 }
 
 func getState(stub shim.ChaincodeStubInterface, key string) (*Item, peer.Response) {
@@ -234,5 +210,32 @@ func getState(stub shim.ChaincodeStubInterface, key string) (*Item, peer.Respons
 	}
 	return &item, shim.Success(nil)
 }
+
+func join(iterator shim.CommonIteratorInterface, fn NextFunc) ([]byte, error) {
+	defer iterator.Close()
+
+	first := true
+	buffer := new(bytes.Buffer)
+	fmt.Fprint(buffer, "[")
+	for iterator.HasNext() {
+		value, err := fn()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to iterate over results")
+		}
+
+		if first {
+			first = false
+		} else {
+			fmt.Fprint(buffer, ",")
+		}
+
+		fmt.Fprint(buffer, value)
+	}
+
+	fmt.Fprint(buffer, "]")
+	return buffer.Bytes(), nil
+}
+
+type NextFunc func() (string, error)
 
 type ChaincodeFunc func(shim.ChaincodeStubInterface, ...string) peer.Response
